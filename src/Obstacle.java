@@ -1,29 +1,50 @@
 public class Obstacle implements Collidable {
-    private RoadSlot slot;
+    public int y;
+
+    private int x;
+    private int width;
+    private int height;
+
     private boolean isTall;
     
-    public Obstacle(RoadSlot slot, boolean isTall) {
-        this.slot = slot;
+    public Obstacle(int y, int width, int height, RoadSlot slot, int sceneWidth, int roadWidth, boolean isTall) {
+        this.y = y;
+        this.width = width;
+        this.height = height;
         this.isTall = isTall;
-    }
 
-    public RoadSlot getSlot() {
-        return slot;
-    }
-
-    public boolean isTall() {
-        return isTall;
+        if (slot == RoadSlot.LEFT || slot == RoadSlot.BOTH)
+            x = sceneWidth / 2 - roadWidth;
+        else
+            y = sceneWidth / 2;
     }
 
     @Override
     public boolean isCollidedWith(Truck truck) {
-        // TODO Auto-generated method stub
+        if (
+            truck.x + truck.getWidth() >= x &&
+            truck.x <= x + width &&
+            truck.y + truck.getHeight() >= y &&
+            truck.y <= y + height
+        )
+            return true;
+
         return false;
     }
 
-    @Override
-    public void onceCollideWith(Truck truck) {
-        // TODO Auto-generated method stub
-        return;
+    public int getX() {
+        return x;
+    }
+
+    public int getWidth() {
+        return width;
+    }
+
+    public int getHeight() {
+        return height;
+    }
+
+    public boolean isTall() {
+        return isTall;
     }
 }
