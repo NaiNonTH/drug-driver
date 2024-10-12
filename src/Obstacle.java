@@ -7,16 +7,16 @@ public class Obstacle implements Collidable {
 
     private boolean isTall;
     
-    public Obstacle(int y, int width, int height, RoadSlot slot, int sceneWidth, int roadWidth, boolean isTall) {
+    public Obstacle(int y, int width, int height, int slot, int sceneWidth, int roadWidth, boolean isTall) {
         this.y = y;
         this.width = width;
         this.height = height;
         this.isTall = isTall;
 
         if (slot == RoadSlot.LEFT || slot == RoadSlot.BOTH)
-            x = sceneWidth / 2 - roadWidth;
+            x = sceneWidth / 2 - width;
         else
-            y = sceneWidth / 2;
+            x = sceneWidth / 2;
     }
 
     @Override
