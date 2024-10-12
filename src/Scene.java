@@ -15,6 +15,7 @@ public class Scene extends JPanel {
     Thread paint = new Paint();
     Thread spawnObstacles = new SpawnObstacles();
     Thread moveObjects = new MoveObjects();
+    Thread checkCollision = new CheckCollision();
 
     public Scene() {
         setFocusable(true);
@@ -194,6 +195,9 @@ public class Scene extends JPanel {
 
                 if (!moveObjects.isAlive())
                     moveObjects.start();
+
+                if (!checkCollision.isAlive())
+                    checkCollision.start();
             }
             else if (
                 gameStarted &&
@@ -227,13 +231,34 @@ public class Scene extends JPanel {
                     for (Obstacle obstacle : obstacles) {
                         ++obstacle.y;
                     }
-
-                    try {
-                        sleep(0, 10);
-                    } catch (InterruptedException e) {}
                 }
+                    
+                try {
+                    sleep(0, 10);
+                } catch (InterruptedException e) {}
             }
         }
+    }
+
+    class CheckCollision extends Thread {
+        @Override
+        public void run() {
+            while (gameOver == false) {
+                for (Obstacle obstacle : obstacles) {
+                    try {
+                        if (obstacle.isCollidedWith(truck)) {
+                            gameOver = true;
+                            repaint();
+                        }
+                    } catch (NullPointerException e) {}
+                }
+
+                try { // Add this to allow the thread to keep running, despite it has no task to do.
+                    sleep(0);
+                } catch (InterruptedException e) {}
+            }
+        }
+        
     }
 
     class SpawnObstacles extends Thread {
