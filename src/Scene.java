@@ -237,17 +237,23 @@ public class Scene extends JPanel {
     }
 
     class SpawnObstacles extends Thread {
+        public int randomTime() {
+            return (int) Math.round(Math.random() * (2000 - 750) + 750);
+        }
+
         @Override
         public void run() {
             try {
                 sleep(3250);
             } catch (InterruptedException e) {}
 
-            while (!gameOver) {
-                obstacles.add(new Barrier(0, RoadSlot.LEFT, getWidth(), roadSize, false));
-
+            while (gameStarted) {
+                if (!gamePaused) {
+                    obstacles.add(new Barrier(0, (int) Math.round(Math.random()), getWidth(), roadSize, false));
+                }
+                
                 try {
-                    sleep(2000);
+                    sleep(randomTime());
                 } catch (InterruptedException e) {}
             }
         }
