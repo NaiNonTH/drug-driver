@@ -1,6 +1,7 @@
 import java.awt.*;
 import java.awt.event.*;
 import java.net.URL;
+import java.util.ArrayList;
 
 import javax.swing.*;
 
@@ -11,7 +12,9 @@ public class Scene extends JPanel {
     boolean gamePaused = false;
     boolean gameOver = false;
     
-    Thread loop = new Animate();
+    Thread paint = new Paint();
+    Thread spawnObstacles = new SpawnObstacles();
+    Thread moveObjects = new MoveObjects();
 
     public Scene() {
         setFocusable(true);
@@ -51,18 +54,40 @@ public class Scene extends JPanel {
     Truck truck = new Truck();
 
     public void drawTruck(Graphics g) {
+        truck.y = getHeight() - 128;
+
         URL truckUrl = getClass().getResource("assets/textures/truck.png");
         Image truckImage = new ImageIcon(truckUrl).getImage();
 
-        g.drawImage(truckImage, truck.x, getHeight() - 128, truck.getSize() * 8 / 15, truck.getSize(), this);
+        g.drawImage(truckImage, truck.x, truck.y, truck.getWidth(), truck.getHeight(), this);
 
         if (gameOver) {
             URL explosionUrl = getClass().getResource("assets/textures/explosion.png");
             Image explosionImage = new ImageIcon(explosionUrl).getImage();
 
-            g.drawImage(explosionImage, truck.x + truck.getOffset(), getHeight() - 160, truck.getSize(), truck.getSize(), this);
+            g.drawImage(explosionImage, truck.getX() + truck.getOffset(), getHeight() - 160, truck.getHeight(), truck.getHeight(), this);
         }
     }
+
+    public void drawObstacles(Graphics g) {
+        for (int obstacleIndex = 0; obstacleIndex < obstacles.size(); ++obstacleIndex) {
+            Obstacle obstacle = obstacles.get(obstacleIndex);
+
+            if (obstacle instanceof Barrier) {
+                URL barrierUrl = getClass().getResource("assets/textures/barrier.png");
+                Image barrierImage = new ImageIcon(barrierUrl).getImage();
+
+                if (obstacle.y > getHeight()) {
+                    obstacles.remove(obstacleIndex);
+                    --obstacleIndex;
+                }
+
+                g.drawImage(barrierImage, obstacle.getX(), obstacle.y, obstacle.getWidth(), obstacle.getHeight(), this);
+            }
+        }
+    }
+
+    ArrayList<Obstacle> obstacles = new ArrayList<Obstacle>();
 
     @Override
     public void paintComponent(Graphics g) {
@@ -70,6 +95,7 @@ public class Scene extends JPanel {
 
         drawWater(g);
         drawRoad(g);
+        drawObstacles(g);
         
         if (!gameStarted || gamePaused) {
             g.setColor(new Color(255, 255, 0));
@@ -160,8 +186,14 @@ public class Scene extends JPanel {
                 gameStarted = true;
                 gamePaused = false;
 
-                if (!loop.isAlive())
-                    loop.start();
+                if (!paint.isAlive())
+                    paint.start();
+
+                if (!spawnObstacles.isAlive())
+                    spawnObstacles.start();
+
+                if (!moveObjects.isAlive())
+                    moveObjects.start();
             }
             else if (
                 gameStarted &&
@@ -172,22 +204,50 @@ public class Scene extends JPanel {
         }
     }
     
-    class Animate extends Thread {
-        public Animate() {
-            setPriority(MAX_PRIORITY);
+    class Paint extends Thread {
+        @Override
+        public void run() {
+            while (!gameOver) {
+                repaint();
+                
+                try {
+                    Thread.sleep(0, 10);
+                } catch (InterruptedException e) {}
+            }
         }
-        
+    }
+    
+    class MoveObjects extends Thread {
         @Override
         public void run() {
             while (!gameOver) {
                 if (!gamePaused) {
                     ++offset;
+                    
+                    for (Obstacle obstacle : obstacles) {
+                        ++obstacle.y;
+                    }
+
+                    try {
+                        sleep(0, 10);
+                    } catch (InterruptedException e) {}
                 }
-                
-                repaint();
-                
+            }
+        }
+    }
+
+    class SpawnObstacles extends Thread {
+        @Override
+        public void run() {
+            try {
+                sleep(3250);
+            } catch (InterruptedException e) {}
+
+            while (!gameOver) {
+                obstacles.add(new Barrier(0, RoadSlot.LEFT, getWidth(), roadSize, false));
+
                 try {
-                    Thread.sleep(0, 10);
+                    sleep(2000);
                 } catch (InterruptedException e) {}
             }
         }
