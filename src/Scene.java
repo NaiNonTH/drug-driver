@@ -13,9 +13,13 @@ public class Scene extends JPanel {
     boolean gameOver = false;
     
     Thread paint = new Paint();
+    Thread entityModifier = new EntityModifier();
     Thread spawnObstacles = new SpawnObstacles();
-    Thread moveObjects = new MoveObjects();
-    Thread checkCollision = new CheckCollision();
+    Thread countdown = new Countdown();
+    
+    Truck truck = new Truck();
+    
+    ArrayList<Obstacle> obstacles = new ArrayList<Obstacle>();
 
     public Scene() {
         setFocusable(true);
@@ -52,8 +56,6 @@ public class Scene extends JPanel {
         }
     }
 
-    Truck truck = new Truck();
-
     public void drawTruck(Graphics g) {
         truck.y = getHeight() - 128;
 
@@ -88,15 +90,14 @@ public class Scene extends JPanel {
         }
     }
 
-    ArrayList<Obstacle> obstacles = new ArrayList<Obstacle>();
-
     @Override
     public void paintComponent(Graphics g) {
-        super.paintComponent(g);
-
         drawWater(g);
         drawRoad(g);
         drawObstacles(g);
+        
+        g.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 24));
+        FontMetrics metrics = g.getFontMetrics();
         
         if (!gameStarted || gamePaused) {
             g.setColor(new Color(255, 255, 0));
@@ -104,13 +105,9 @@ public class Scene extends JPanel {
 
             g.setColor(new Color(118, 111, 0));
             g.drawRect(getWidth() / 2 - 120, getHeight() / 2 - 32, 240, 64);
-            
-            g.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 24));
-            FontMetrics metrics = g.getFontMetrics();
 
             String startString = "START";
             g.drawString(startString, getWidth() / 2 - metrics.stringWidth(startString) / 2, getHeight() / 2 - 20 + metrics.getHeight());
-
 
             if (gamePaused) {
                 String pauseString = "PAUSED";
@@ -121,32 +118,36 @@ public class Scene extends JPanel {
         }
         else if (gameOver) {
             g.setColor(Color.WHITE);
-            g.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 24));
             g.drawString("GAME OVER", 10, 10 + g.getFontMetrics().getHeight());
         }
 
         drawTruck(g);
-    }
 
-    public void moveTruck(MouseEvent e) {
-        if (!gameStarted || gamePaused || gameOver) return;
+        String timeString = String.valueOf(truck.time);
 
-        truck.x = e.getX() + truck.getOffset();
-
-        if (
-            gameStarted &&
-            !gamePaused &&
-            (
-                truck.x < getWidth() / 2 - roadSize + truck.getOffset() ||
-                truck.x > getWidth() / 2 + roadSize + truck.getOffset()
-            )
-        ) {
-            gameOver = true;
-            repaint();
-        }
+        g.setColor(Color.BLACK);
+        g.drawString(timeString, getWidth() / 2 - metrics.stringWidth(timeString) / 2, 16 + metrics.getHeight());
     }
 
     class MovingTruck implements MouseMotionListener {
+        public void moveTruck(MouseEvent e) {
+            if (!gameStarted || gamePaused || gameOver) return;
+
+            truck.x = e.getX() + truck.getOffset();
+
+            if (
+                gameStarted &&
+                !gamePaused &&
+                (
+                    truck.x < getWidth() / 2 - roadSize + truck.getOffset() ||
+                    truck.x > getWidth() / 2 + roadSize + truck.getOffset()
+                )
+            ) {
+                gameOver = true;
+                repaint();
+            }
+        }
+
         @Override
         public void mouseDragged(MouseEvent e) {
             moveTruck(e);
@@ -193,11 +194,11 @@ public class Scene extends JPanel {
                 if (!spawnObstacles.isAlive())
                     spawnObstacles.start();
 
-                if (!moveObjects.isAlive())
-                    moveObjects.start();
+                if (!entityModifier.isAlive())
+                    entityModifier.start();
 
-                if (!checkCollision.isAlive())
-                    checkCollision.start();
+                if (!countdown.isAlive())
+                    countdown.start();
             }
             else if (
                 gameStarted &&
@@ -220,46 +221,6 @@ public class Scene extends JPanel {
             }
         }
     }
-    
-    class MoveObjects extends Thread {
-        @Override
-        public void run() {
-            while (!gameOver) {
-                if (!gamePaused) {
-                    ++offset;
-                    
-                    for (Obstacle obstacle : obstacles) {
-                        ++obstacle.y;
-                    }
-                }
-                    
-                try {
-                    sleep(0, 10);
-                } catch (InterruptedException e) {}
-            }
-        }
-    }
-
-    class CheckCollision extends Thread {
-        @Override
-        public void run() {
-            while (gameOver == false) {
-                for (Obstacle obstacle : obstacles) {
-                    try {
-                        if (obstacle.isCollidedWith(truck)) {
-                            gameOver = true;
-                            repaint();
-                        }
-                    } catch (NullPointerException e) {}
-                }
-
-                try { // Add this to allow the thread to keep running, despite it has no task to do.
-                    sleep(0);
-                } catch (InterruptedException e) {}
-            }
-        }
-        
-    }
 
     class SpawnObstacles extends Thread {
         public int randomTime() {
@@ -274,13 +235,53 @@ public class Scene extends JPanel {
 
             while (gameStarted) {
                 if (!gamePaused) {
-                    obstacles.add(new Barrier(0, (int) Math.round(Math.random()), getWidth(), roadSize, false));
+                    obstacles.add(new Barrier((int) Math.round(Math.random()), getWidth(), roadSize, false));
                 }
                 
                 try {
                     sleep(randomTime());
                 } catch (InterruptedException e) {}
             }
+        }
+    }
+    
+    class EntityModifier extends Thread {
+        @Override
+        public void run() {
+            while (!gameOver) {
+                try {
+                    sleep(0, 10);
+                } catch (InterruptedException e) {}
+
+                if (gamePaused) continue;
+
+                offset += truck.speed;
+    
+                for (Obstacle obstacle : obstacles) {
+                    obstacle.y += truck.speed;
+                    
+                    if (obstacle.isCollidedWith(truck) && obstacle.onCollided() == 0) {
+                        gameOver = true;
+                        repaint();
+                    }
+                }
+            }
+        }
+    }
+
+    class Countdown extends Thread {
+        @Override
+        public void run() {
+            while (!gameOver || truck.time > 0) {
+                try {
+                    sleep(1000);
+                } catch (InterruptedException e) {}
+                
+                --truck.time;
+            }
+
+            gameOver = true;
+            repaint();
         }
     }
 }

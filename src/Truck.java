@@ -2,6 +2,9 @@ public class Truck {
     public int x;
     public int y;
     private boolean floating = false;
+
+    public int speed = 1;
+    public int time = 60;
     
     public final static int baseSize = 96;
     public final static int baseOffset = -24;

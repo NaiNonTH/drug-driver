@@ -1,47 +1,10 @@
-public class Obstacle implements Collidable {
-    public int y;
-
-    private int x;
-    private int width;
-    private int height;
+public class Obstacle extends Entity {
 
     private boolean isTall;
     
-    public Obstacle(int y, int width, int height, int slot, int sceneWidth, int roadWidth, boolean isTall) {
-        this.y = y;
-        this.width = width;
-        this.height = height;
+    public Obstacle(int width, int height, int slot, int sceneWidth, int roadWidth, boolean isTall) {
+        super(width, height, slot, sceneWidth, roadWidth);
         this.isTall = isTall;
-
-        if (slot == RoadSlot.LEFT || slot == RoadSlot.BOTH)
-            x = sceneWidth / 2 - width;
-        else
-            x = sceneWidth / 2;
-    }
-
-    @Override
-    public boolean isCollidedWith(Truck truck) {
-        if (
-            truck.x + truck.getWidth() >= x &&
-            truck.x <= x + width &&
-            truck.y + truck.getHeight() >= y &&
-            truck.y <= y + height
-        )
-            return true;
-
-        return false;
-    }
-
-    public int getX() {
-        return x;
-    }
-
-    public int getWidth() {
-        return width;
-    }
-
-    public int getHeight() {
-        return height;
     }
 
     public boolean isTall() {
