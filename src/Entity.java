@@ -4,8 +4,11 @@ public class Entity implements Collidable {
     private int x;
     private int width;
     private int height;
+
+    private String name;
     
-    public Entity(int width, int height, int slot, int sceneWidth, int roadWidth) {
+    public Entity(String name, int width, int height, int slot, int sceneWidth, int roadWidth) {
+        this.name = name;
         this.y = -height;
         this.width = width;
         this.height = height;
@@ -49,5 +52,9 @@ public class Entity implements Collidable {
 
     public int getHeight() {
         return height;
+    }
+
+    public String getName() {
+        return name;
     }
 }

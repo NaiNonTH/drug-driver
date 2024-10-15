@@ -1,6 +1,6 @@
 public class Oil extends Entity {
     public Oil(int width, int height, int slot, int sceneWidth, int roadWidth) {
-        super(width, height, slot, sceneWidth, roadWidth);
+        super("oil", width, height, slot, sceneWidth, roadWidth);
     }
 
     @Override

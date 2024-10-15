@@ -79,16 +79,21 @@ public class Scene extends JPanel {
         for (int obstacleIndex = 0; obstacleIndex < entities.size(); ++obstacleIndex) {
             Entity obstacle = entities.get(obstacleIndex);
 
-            if (obstacle instanceof Barrier) {
-                URL barrierUrl = getClass().getResource("assets/textures/barrier.png");
-                Image barrierImage = new ImageIcon(barrierUrl).getImage();
+            URL textureUrl = getClass().getResource("assets/textures/" + obstacle.getName() + ".png");
+            Image textureImage;
 
-                if (obstacle.y > getHeight()) {
-                    entities.remove(obstacleIndex);
-                    --obstacleIndex;
-                }
+            try {
+                textureImage = new ImageIcon(textureUrl).getImage();
+            }
+            catch (NullPointerException e) {
+                textureImage = new ImageIcon("assets/textures/fallback.png").getImage();
+            }
 
-                g.drawImage(barrierImage, obstacle.getX(), obstacle.y, obstacle.getWidth(), obstacle.getHeight(), this);
+            g.drawImage(textureImage, obstacle.getX(), obstacle.y, obstacle.getWidth(), obstacle.getHeight(), this);
+            
+            if (obstacle.y > getHeight()) {
+                entities.remove(obstacleIndex);
+                --obstacleIndex;
             }
         }
     }
@@ -179,7 +184,16 @@ public class Scene extends JPanel {
         public void mouseExited(MouseEvent e) {}
 
         @Override
-        public void mousePressed(MouseEvent e) {}
+        public void mousePressed(MouseEvent e) {
+            if (
+                gameStarted &&
+                !gamePaused &&
+                e.getButton() == MouseEvent.BUTTON1
+            ) {
+                truck.setFloatingTo(true);
+                truck.x = e.getX() + truck.getOffset();
+            }
+        }
 
         @Override
         public void mouseReleased(MouseEvent e) {
@@ -213,6 +227,13 @@ public class Scene extends JPanel {
                 ) {
                     gamePaused = false;
                 }
+                else if (
+                    gameStarted &&
+                    !gamePaused
+                ) {
+                    truck.setFloatingTo(false);
+                    truck.x = e.getX() + truck.getOffset();
+                }
             }
             else if (
                 gameStarted &&
@@ -241,8 +262,27 @@ public class Scene extends JPanel {
     }
 
     class SpawnEntities extends Thread {
+        public boolean span() {
+            return Math.round(Math.random()) == 1;
+        }
         public int randomTime() {
             return (int) Math.round(Math.random() * (2000 - 750) + 750);
+        }
+        public int randomSlot() {
+            return (int) Math.round(Math.random() * 2);
+        }
+        public int randomEntityType() {
+            return (int) Math.round(Math.random() * 2);
+        }
+        public void spawnEntity(int type, int slot) {
+            switch (type) {
+                case 0:
+                    entities.add(new Barrier(slot, getWidth(), roadSize));
+                    break;
+                case 1:
+                    entities.add(new Rice(slot, getWidth(), roadSize));
+                    break;
+            }
         }
 
         @Override
@@ -253,7 +293,14 @@ public class Scene extends JPanel {
 
             while (gameStarted) {
                 if (!gamePaused) {
-                    entities.add(new Barrier((int) Math.round(Math.random()), getWidth(), roadSize, false));
+                    int type = randomEntityType();
+                    int slot = randomSlot();
+
+                    spawnEntity(type, slot);
+                    
+                    if (span() && offset > 5000) {
+                        spawnEntity(type, (slot + 1) % 2);
+                    }
                 }
                 
                 try {
@@ -275,12 +322,24 @@ public class Scene extends JPanel {
 
                 offset += truck.speed;
     
-                for (Entity obstacle : entities) {
-                    obstacle.y += truck.speed;
-                    
-                    if (obstacle.isCollidedWith(truck) && obstacle.onCollided() == 0) {
-                        gameOver = true;
-                        repaint();
+                for (Entity entity : entities) {
+                    entity.y += truck.speed;
+
+                    if (entity.isCollidedWith(truck)) {
+                        if (entity instanceof Obstacle) {
+                            Obstacle obstacle = (Obstacle) entity;
+                            
+                            if (
+                                (!truck.isFloating() || obstacle.isTall()) &&
+                                obstacle.onCollided() == 0
+                            ) {
+                                gameOver = true;
+                                repaint();
+                            }
+                        }
+                        else {
+                            entity.onCollided();
+                        }
                     }
                 }
             }
