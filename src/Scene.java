@@ -11,15 +11,18 @@ public class Scene extends JPanel {
     boolean gameStarted = false;
     boolean gamePaused = false;
     boolean gameOver = false;
+
+    int pausePosX;
+    int pausePosY;
     
     Thread paint = new Paint();
     Thread entityModifier = new EntityModifier();
-    Thread spawnObstacles = new SpawnObstacles();
+    Thread spawnEntities = new SpawnEntities();
     Thread countdown = new Countdown();
     
     Truck truck = new Truck();
     
-    ArrayList<Obstacle> obstacles = new ArrayList<Obstacle>();
+    ArrayList<Entity> entities = new ArrayList<Entity>();
 
     public Scene() {
         setFocusable(true);
@@ -73,15 +76,15 @@ public class Scene extends JPanel {
     }
 
     public void drawObstacles(Graphics g) {
-        for (int obstacleIndex = 0; obstacleIndex < obstacles.size(); ++obstacleIndex) {
-            Obstacle obstacle = obstacles.get(obstacleIndex);
+        for (int obstacleIndex = 0; obstacleIndex < entities.size(); ++obstacleIndex) {
+            Entity obstacle = entities.get(obstacleIndex);
 
             if (obstacle instanceof Barrier) {
                 URL barrierUrl = getClass().getResource("assets/textures/barrier.png");
                 Image barrierImage = new ImageIcon(barrierUrl).getImage();
 
                 if (obstacle.y > getHeight()) {
-                    obstacles.remove(obstacleIndex);
+                    entities.remove(obstacleIndex);
                     --obstacleIndex;
                 }
 
@@ -99,7 +102,7 @@ public class Scene extends JPanel {
         g.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 24));
         FontMetrics metrics = g.getFontMetrics();
         
-        if (!gameStarted || gamePaused) {
+        if (!gameStarted) {
             g.setColor(new Color(255, 255, 0));
             g.fillRect(getWidth() / 2 - 120, getHeight() / 2 - 32, 240, 64);
 
@@ -108,13 +111,16 @@ public class Scene extends JPanel {
 
             String startString = "START";
             g.drawString(startString, getWidth() / 2 - metrics.stringWidth(startString) / 2, getHeight() / 2 - 20 + metrics.getHeight());
+            truck.x = getWidth() / 2 - 32;
+        }
+        else if (gamePaused) {
+            String pauseString = "PAUSED";
 
-            if (gamePaused) {
-                String pauseString = "PAUSED";
-                g.drawString(pauseString, getWidth() / 2 - metrics.stringWidth(pauseString) / 2, getHeight() / 2 - 32 - metrics.getHeight() / 2);
-            }
-            else
-                truck.x = getWidth() / 2 - 32;
+            g.setColor(new Color(118, 111, 0));
+            g.drawString(pauseString, getWidth() / 2 - metrics.stringWidth(pauseString) / 2, getHeight() / 2 - 32 - metrics.getHeight() / 2);
+
+            g.setColor(Color.YELLOW);
+            g.fillOval(pausePosX - 10, pausePosY - 10, 20, 20);
         }
         else if (gameOver) {
             g.setColor(Color.WHITE);
@@ -123,7 +129,7 @@ public class Scene extends JPanel {
 
         drawTruck(g);
 
-        String timeString = String.valueOf(truck.time);
+        String timeString = String.valueOf((int) Math.ceil(truck.time));
 
         g.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 48));
         metrics = g.getFontMetrics();
@@ -182,31 +188,40 @@ public class Scene extends JPanel {
 
             if (
                 !gameOver &&
-                e.getButton() == MouseEvent.BUTTON1 &&
-                x >= getWidth() / 2 - 112 &&
-                x <= getWidth() / 2 + 128 &&
-                y >= getHeight() / 2 - 32 &&
-                y <= getHeight() / 2 + 32
+                e.getButton() == MouseEvent.BUTTON1
             ) {
-                gameStarted = true;
-                gamePaused = false;
-
-                if (!paint.isAlive())
+                if (
+                    !gameStarted &&
+                    x >= getWidth() / 2 - 112 &&
+                    x <= getWidth() / 2 + 128 &&
+                    y >= getHeight() / 2 - 32 &&
+                    y <= getHeight() / 2 + 32
+                ) {
+                    gameStarted = true;
+                    
                     paint.start();
-
-                if (!spawnObstacles.isAlive())
-                    spawnObstacles.start();
-
-                if (!entityModifier.isAlive())
+                    spawnEntities.start();
                     entityModifier.start();
-
-                if (!countdown.isAlive())
                     countdown.start();
+                }
+                else if (
+                    gamePaused &&
+                    x >= pausePosX - 10 &&
+                    x <= pausePosX + 10 &&
+                    y >= pausePosY - 10 &&
+                    y <= pausePosY + 10
+                ) {
+                    gamePaused = false;
+                }
             }
             else if (
                 gameStarted &&
+                !gamePaused &&
                 e.getButton() == MouseEvent.BUTTON3
             ) {
+                pausePosX = x;
+                pausePosY = y;
+
                 gamePaused = true;
             }
         }
@@ -219,13 +234,13 @@ public class Scene extends JPanel {
                 repaint();
                 
                 try {
-                    Thread.sleep(0, 10);
+                    sleep(0, 10);
                 } catch (InterruptedException e) {}
             }
         }
     }
 
-    class SpawnObstacles extends Thread {
+    class SpawnEntities extends Thread {
         public int randomTime() {
             return (int) Math.round(Math.random() * (2000 - 750) + 750);
         }
@@ -238,7 +253,7 @@ public class Scene extends JPanel {
 
             while (gameStarted) {
                 if (!gamePaused) {
-                    obstacles.add(new Barrier((int) Math.round(Math.random()), getWidth(), roadSize, false));
+                    entities.add(new Barrier((int) Math.round(Math.random()), getWidth(), roadSize, false));
                 }
                 
                 try {
@@ -260,7 +275,7 @@ public class Scene extends JPanel {
 
                 offset += truck.speed;
     
-                for (Obstacle obstacle : obstacles) {
+                for (Entity obstacle : entities) {
                     obstacle.y += truck.speed;
                     
                     if (obstacle.isCollidedWith(truck) && obstacle.onCollided() == 0) {
@@ -277,10 +292,12 @@ public class Scene extends JPanel {
         public void run() {
             while (!gameOver && truck.time > 0) {
                 try {
-                    sleep(1000);
+                    sleep(100);
                 } catch (InterruptedException e) {}
                 
-                --truck.time;
+                if (gamePaused) continue;
+                
+                truck.time -= 0.1;
             }
 
             gameOver = true;

@@ -4,7 +4,7 @@ public class Truck {
     private boolean floating = false;
 
     public int speed = 1;
-    public int time = 60;
+    public float time = (float) 60.0;
     
     public final static int baseSize = 96;
     public final static int baseOffset = -24;
