@@ -125,8 +125,11 @@ public class Scene extends JPanel {
 
         String timeString = String.valueOf(truck.time);
 
+        g.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 48));
+        metrics = g.getFontMetrics();
+
         g.setColor(Color.BLACK);
-        g.drawString(timeString, getWidth() / 2 - metrics.stringWidth(timeString) / 2, 16 + metrics.getHeight());
+        g.drawString(timeString, getWidth() / 2 - metrics.stringWidth(timeString) / 2, 8 + metrics.getHeight());
     }
 
     class MovingTruck implements MouseMotionListener {
@@ -272,7 +275,7 @@ public class Scene extends JPanel {
     class Countdown extends Thread {
         @Override
         public void run() {
-            while (!gameOver || truck.time > 0) {
+            while (!gameOver && truck.time > 0) {
                 try {
                     sleep(1000);
                 } catch (InterruptedException e) {}
