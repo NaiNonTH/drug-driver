@@ -6,7 +6,7 @@ import java.util.ArrayList;
 import javax.swing.*;
 
 public class Scene extends JPanel {
-    int offset = 0;
+    double offset = 0;
 
     boolean gameStarted = false;
     boolean gamePaused = false;
@@ -14,11 +14,15 @@ public class Scene extends JPanel {
 
     int pausePosX;
     int pausePosY;
+
+    int mousePosX;
+    int mousePosY;
     
     Thread paint = new Paint();
     Thread entityModifier = new EntityModifier();
     Thread spawnEntities = new SpawnEntities();
     Thread countdown = new Countdown();
+    Thread depleteStamina = new DepleteStamina();
     
     Truck truck = new Truck();
     
@@ -39,7 +43,7 @@ public class Scene extends JPanel {
     public void drawWater(Graphics g) {
         Image waterImage = new ImageIcon(waterUrl).getImage();
 
-        for (int y = (offset / 16) % waterSize - waterSize; y < getHeight(); y += waterSize) {
+        for (int y = (int)(offset / 16) % waterSize - waterSize; y < getHeight(); y += waterSize) {
             for (int x = 0; x < getWidth(); x += waterSize) {
                 g.drawImage(waterImage, x, y, waterSize, waterSize, this);
             }
@@ -53,7 +57,7 @@ public class Scene extends JPanel {
         Image roadLeftImage = new ImageIcon(roadLeftUrl).getImage();
         Image roadRightImage = new ImageIcon(roadRightUrl).getImage();
 
-        for (int y = offset % roadSize - roadSize; y < getHeight(); y += roadSize) {
+        for (int y = (int) offset % roadSize - roadSize; y < getHeight(); y += roadSize) {
             g.drawImage(roadLeftImage, getWidth() / 2 - roadSize, y, roadSize, roadSize, this);
             g.drawImage(roadRightImage, getWidth() / 2, y, roadSize, roadSize, this);
         }
@@ -76,10 +80,15 @@ public class Scene extends JPanel {
     }
 
     public void drawObstacles(Graphics g) {
-        for (int obstacleIndex = 0; obstacleIndex < entities.size(); ++obstacleIndex) {
-            Entity obstacle = entities.get(obstacleIndex);
+        for (int entityIndex = 0; entityIndex < entities.size(); ++entityIndex) {
+            Entity entity = entities.get(entityIndex);
+            
+            if (
+                entity instanceof Oil &&
+                ((Oil) entity).isCollected
+            ) continue;
 
-            URL textureUrl = getClass().getResource("assets/textures/" + obstacle.getName() + ".png");
+            URL textureUrl = getClass().getResource("assets/textures/" + entity.getName() + ".png");
             Image textureImage;
 
             try {
@@ -89,11 +98,11 @@ public class Scene extends JPanel {
                 textureImage = new ImageIcon("assets/textures/fallback.png").getImage();
             }
 
-            g.drawImage(textureImage, obstacle.getX(), obstacle.y, obstacle.getWidth(), obstacle.getHeight(), this);
+            g.drawImage(textureImage, entity.getX(), (int) entity.y, entity.getWidth(), entity.getHeight(), this);
             
-            if (obstacle.y > getHeight()) {
-                entities.remove(obstacleIndex);
-                --obstacleIndex;
+            if (entity.y > getHeight()) {
+                entities.remove(entityIndex);
+                --entityIndex;
             }
         }
     }
@@ -103,6 +112,8 @@ public class Scene extends JPanel {
         drawWater(g);
         drawRoad(g);
         drawObstacles(g);
+        
+        // Render UI
         
         g.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 24));
         FontMetrics metrics = g.getFontMetrics();
@@ -128,11 +139,22 @@ public class Scene extends JPanel {
             g.fillOval(pausePosX - 10, pausePosY - 10, 20, 20);
         }
         else if (gameOver) {
-            g.setColor(Color.WHITE);
-            g.drawString("GAME OVER", 10, 10 + g.getFontMetrics().getHeight());
+            String gameOverString = "GAME OVER";
+            String scoreString = "Score: " + (int) offset;
+
+            g.setColor(new Color(255, 255, 255, 196));
+            g.fillRect(0, 0, getWidth(), getHeight());
+
+            g.setColor(Color.BLACK);
+            g.drawString(gameOverString, getWidth() / 2 - metrics.stringWidth(gameOverString) / 2, getHeight() / 2 + metrics.getHeight() / 2 - 20);
+            g.drawString(scoreString, getWidth() / 2 - metrics.stringWidth(scoreString) / 2, getHeight() / 2 + metrics.getHeight() / 2 + 20);
         }
 
+        //////////
+
         drawTruck(g);
+
+        // Draw time
 
         String timeString = String.valueOf((int) Math.ceil(truck.time));
 
@@ -141,6 +163,17 @@ public class Scene extends JPanel {
 
         g.setColor(Color.BLACK);
         g.drawString(timeString, getWidth() / 2 - metrics.stringWidth(timeString) / 2, 8 + metrics.getHeight());
+
+        //////////
+
+        // Draw Stamina bar
+
+        if (truck.stamina < 10 && !gameOver && !gamePaused) {
+            g.setColor(Color.GREEN);
+            g.fillRect(mousePosX, mousePosY - 10, (int) Math.ceil(truck.stamina * 10), 4);
+        }
+
+        //////////
     }
 
     class MovingTruck implements MouseMotionListener {
@@ -149,7 +182,11 @@ public class Scene extends JPanel {
 
             truck.x = e.getX() + truck.getOffset();
 
+            mousePosX = e.getX();
+            mousePosY = e.getY();
+
             if (
+                !truck.isFloating() &&
                 gameStarted &&
                 !gamePaused &&
                 (
@@ -217,6 +254,7 @@ public class Scene extends JPanel {
                     spawnEntities.start();
                     entityModifier.start();
                     countdown.start();
+                    depleteStamina.start();
                 }
                 else if (
                     gamePaused &&
@@ -282,6 +320,9 @@ public class Scene extends JPanel {
                 case 1:
                     entities.add(new Rice(slot, getWidth(), roadSize));
                     break;
+                case 2:
+                    entities.add(new Oil(slot, getWidth(), roadSize));
+                    break;
             }
         }
 
@@ -338,7 +379,7 @@ public class Scene extends JPanel {
                             }
                         }
                         else {
-                            entity.onCollided();
+                            entity.onCollided(truck);
                         }
                     }
                 }
@@ -361,6 +402,31 @@ public class Scene extends JPanel {
 
             gameOver = true;
             repaint();
+        }
+    }
+
+    class DepleteStamina extends Thread {
+        @Override
+        public void run() {
+            while (!gameOver) {
+                try {
+                    if (truck.isFloating()) {
+                        truck.stamina -= 0.1;
+    
+                        if (truck.stamina <= 0)
+                            truck.setFloatingTo(false);    
+                        
+                        sleep(50);
+                    }
+                    else if (truck.stamina < 10) {
+                        truck.stamina += 0.1;
+                        
+                        sleep(250);
+                    }
+                    else
+                        sleep(0);
+                } catch (InterruptedException e) {}
+            }
         }
     }
 }

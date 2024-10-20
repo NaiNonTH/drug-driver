@@ -1,5 +1,5 @@
 public class Entity implements Collidable {
-    public int y = 0;
+    public float y = 0;
     
     private int x;
     private int width;
