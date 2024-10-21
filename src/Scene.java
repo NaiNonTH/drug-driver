@@ -304,7 +304,7 @@ public class Scene extends JPanel {
             return Math.round(Math.random()) == 1;
         }
         public int randomTime() {
-            return (int) Math.round(Math.random() * (2000 - 750) + 750);
+            return (int) Math.round(Math.random() * (2000 - 750) / truck.speed + 750 / (1.5 * truck.speed));
         }
         public int randomSlot() {
             return (int) Math.round(Math.random() * 2);
