@@ -28,6 +28,16 @@ public class Scene extends JPanel {
     
     ArrayList<Entity> entities = new ArrayList<Entity>();
 
+    int ADD = 1;
+    int REMOVE = 0;
+
+    public synchronized void modifyEntitiesList(int type, Entity entity) {
+        if (type == ADD)
+            entities.add(entity);
+        else
+            entities.remove(entity);
+    }
+
     public Scene() {
         setFocusable(true);
 
@@ -101,7 +111,7 @@ public class Scene extends JPanel {
             g.drawImage(textureImage, entity.getX(), (int) entity.y, entity.getWidth(), entity.getHeight(), this);
             
             if (entity.y > getHeight()) {
-                entities.remove(entityIndex);
+                modifyEntitiesList(REMOVE, entity);
                 --entityIndex;
             }
         }
@@ -312,13 +322,13 @@ public class Scene extends JPanel {
         public void spawnEntity(int type, int slot) {
             switch (type) {
                 case 0:
-                    entities.add(new Barrier(slot, getWidth(), roadSize));
+                    modifyEntitiesList(ADD, new Barrier(slot, getWidth(), roadSize));
                     break;
                 case 1:
-                    entities.add(new Rice(slot, getWidth(), roadSize));
+                    modifyEntitiesList(ADD, new Rice(slot, getWidth(), roadSize));
                     break;
                 case 2:
-                    entities.add(new Hole(slot, getWidth(), roadSize));
+                    modifyEntitiesList(ADD, new Hole(slot, getWidth(), roadSize));
                     break;
             }
         }
@@ -338,12 +348,10 @@ public class Scene extends JPanel {
                     
                     spawnEntity(type, slot);
                     
-                    if (spanned && offset > 5000) {
+                    if (spanned && offset > 5000)
                         spawnEntity(type, (slot + 1) % 2);
-                    }
-                    else if (spawnOil && truck.time < 48) {
-                        entities.add(new Oil((slot + 1) % 2, getWidth(), roadSize));
-                    }
+                    else if (spawnOil && truck.time < 48)
+                        modifyEntitiesList(ADD, new Oil((slot + 1) % 2, getWidth(), roadSize));
                 }
 
                 int time = random((int)(2000 / truck.speed), (int)(750 / (1.5 * truck.speed)));
