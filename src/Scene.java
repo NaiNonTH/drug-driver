@@ -372,7 +372,10 @@ public class Scene extends JPanel {
                             
                             if (
                                 (!truck.isFloating() || obstacle.isTall()) &&
-                                obstacle.onCollided() == 0
+                                (
+                                    obstacle.onCollided() == 0 &&
+                                    obstacle.onCollided(truck) == 0
+                                )
                             ) {
                                 gameOver = true;
                                 repaint();
