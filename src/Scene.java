@@ -300,17 +300,14 @@ public class Scene extends JPanel {
     }
 
     class SpawnEntities extends Thread {
-        public boolean span() {
+        public boolean random() {
             return Math.round(Math.random()) == 1;
         }
-        public int randomTime() {
-            return (int) Math.round(Math.random() * (2000 - 750) / truck.speed + 750 / (1.5 * truck.speed));
+        public int random(int range) {
+            return (int) Math.round(Math.random() * range);
         }
-        public int randomSlot() {
-            return (int) Math.round(Math.random() * 2);
-        }
-        public int randomEntityType() {
-            return (int) Math.round(Math.random() * 2);
+        public int random(int start, int end) {
+            return (int) Math.round(Math.random() * (end - start) + start);
         }
         public void spawnEntity(int type, int slot) {
             switch (type) {
@@ -321,7 +318,7 @@ public class Scene extends JPanel {
                     entities.add(new Rice(slot, getWidth(), roadSize));
                     break;
                 case 2:
-                    entities.add(new Oil(slot, getWidth(), roadSize));
+                    entities.add(new Hole(slot, getWidth(), roadSize));
                     break;
             }
         }
@@ -334,18 +331,25 @@ public class Scene extends JPanel {
 
             while (gameStarted) {
                 if (!gamePaused) {
-                    int type = randomEntityType();
-                    int slot = randomSlot();
-
+                    int type = random(2);
+                    int slot = random(2);
+                    boolean spanned = random();
+                    boolean spawnOil = random();
+                    
                     spawnEntity(type, slot);
                     
-                    if (span() && offset > 5000) {
+                    if (spanned && offset > 5000) {
                         spawnEntity(type, (slot + 1) % 2);
                     }
+                    else if (spawnOil && truck.time < 48) {
+                        entities.add(new Oil((slot + 1) % 2, getWidth(), roadSize));
+                    }
                 }
+
+                int time = random((int)(2000 / truck.speed), (int)(750 / (1.5 * truck.speed)));
                 
                 try {
-                    sleep(randomTime());
+                    sleep(time);
                 } catch (InterruptedException e) {}
             }
         }
