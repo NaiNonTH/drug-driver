@@ -10,7 +10,7 @@ public class Hole extends Obstacle implements Runnable {
     public int onCollided(Object obj) {
         truck = (Truck) obj;
         
-        if (stepped) return 1;
+        if (stepped || truck.isFloating()) return 1;
 
         stepped = true;
         truck.time -= 15;
