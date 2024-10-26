@@ -37,11 +37,6 @@ public class Entity implements Collidable {
         return 0;
     }
 
-    @Override
-    public int onCollided() {
-        return 0;
-    }
-
     public int getX() {
         return x;
     }

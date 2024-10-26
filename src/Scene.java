@@ -330,6 +330,9 @@ public class Scene extends JPanel {
                 case 2:
                     modifyEntitiesList(ADD, new Hole(slot, getWidth(), roadSize));
                     break;
+                case 3:
+                    modifyEntitiesList(ADD, new Cone(slot, getWidth(), roadSize));
+                    break;
             }
         }
 
@@ -341,7 +344,7 @@ public class Scene extends JPanel {
 
             while (gameStarted) {
                 if (!gamePaused) {
-                    int type = random(2);
+                    int type = random(3);
                     int slot = random(2);
                     boolean spanned = random();
                     boolean spawnOil = random();
@@ -383,11 +386,8 @@ public class Scene extends JPanel {
                             Obstacle obstacle = (Obstacle) entity;
                             
                             if (
-                                (!truck.isFloating() || obstacle.isTall()) &&
-                                (
-                                    obstacle.onCollided() == 0 &&
-                                    obstacle.onCollided(truck) == 0
-                                )
+                                !truck.isFloating() &&
+                                obstacle.onCollided(truck) == 0
                             ) {
                                 gameOver = true;
                                 repaint();

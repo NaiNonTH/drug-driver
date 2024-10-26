@@ -3,14 +3,14 @@ public class Hole extends Obstacle implements Runnable {
     private Truck truck;
 
     public Hole(int slot, int sceneWidth, int roadWidth) {
-        super("hole", 112, 35, slot, sceneWidth, roadWidth, false);
+        super("hole", 112, 35, false, slot, sceneWidth, roadWidth);
     }
 
     @Override
     public int onCollided(Object obj) {
         truck = (Truck) obj;
         
-        if (stepped || truck.isFloating()) return 1;
+        if (stepped || truck.speed < 1) return 1;
 
         stepped = true;
         truck.time -= 15;
