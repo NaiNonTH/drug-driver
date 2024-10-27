@@ -18,8 +18,7 @@ public class Scene extends JPanel {
     int mousePosX;
     int mousePosY;
     
-    Thread paint = new Paint();
-    Thread entityModifier = new EntityModifier();
+    Thread modifyAndPaint = new ModifyAndPaint();
     Thread spawnEntities = new SpawnEntities();
     Thread countdown = new Countdown();
     Thread depleteStamina = new DepleteStamina();
@@ -27,16 +26,6 @@ public class Scene extends JPanel {
     Truck truck = new Truck();
     
     ArrayList<Entity> entities = new ArrayList<Entity>();
-
-    int ADD = 1;
-    int REMOVE = 0;
-
-    public synchronized void modifyEntitiesList(int type, Entity entity) {
-        if (type == ADD)
-            entities.add(entity);
-        else
-            entities.remove(entity);
-    }
 
     public Scene() {
         setFocusable(true);
@@ -109,11 +98,6 @@ public class Scene extends JPanel {
             }
 
             g.drawImage(textureImage, entity.getX(), (int) entity.y, entity.getWidth(), entity.getHeight(), this);
-            
-            if (entity.y > getHeight()) {
-                modifyEntitiesList(REMOVE, entity);
-                --entityIndex;
-            }
         }
     }
 
@@ -260,9 +244,8 @@ public class Scene extends JPanel {
                 ) {
                     gameStarted = true;
                     
-                    paint.start();
                     spawnEntities.start();
-                    entityModifier.start();
+                    modifyAndPaint.start();
                     countdown.start();
                     depleteStamina.start();
                 }
@@ -295,19 +278,6 @@ public class Scene extends JPanel {
             }
         }
     }
-    
-    class Paint extends Thread {
-        @Override
-        public void run() {
-            while (!gameOver) {
-                repaint();
-                
-                try {
-                    sleep(0, 10);
-                } catch (InterruptedException e) {}
-            }
-        }
-    }
 
     class SpawnEntities extends Thread {
         public boolean random() {
@@ -322,16 +292,16 @@ public class Scene extends JPanel {
         public void spawnEntity(int type, int slot) {
             switch (type) {
                 case 0:
-                    modifyEntitiesList(ADD, new Barrier(slot, getWidth(), roadSize));
+                    entities.add(new Barrier(slot, getWidth(), roadSize));
                     break;
                 case 1:
-                    modifyEntitiesList(ADD, new Rice(slot, getWidth(), roadSize));
+                    entities.add(new Rice(slot, getWidth(), roadSize));
                     break;
                 case 2:
-                    modifyEntitiesList(ADD, new Hole(slot, getWidth(), roadSize));
+                    entities.add(new Hole(slot, getWidth(), roadSize));
                     break;
                 case 3:
-                    modifyEntitiesList(ADD, new Cone(slot, getWidth(), roadSize));
+                    entities.add(new Cone(slot, getWidth(), roadSize));
                     break;
             }
         }
@@ -354,7 +324,7 @@ public class Scene extends JPanel {
                     if (spanned && offset > 5000)
                         spawnEntity(type, (slot + 1) % 2);
                     else if (spawnOil && truck.time < 48)
-                        modifyEntitiesList(ADD, new Oil((slot + 1) % 2, getWidth(), roadSize));
+                        entities.add(new Oil((slot + 1) % 2, getWidth(), roadSize));
                 }
 
                 int time = random((int)(2000 / truck.speed), (int)(750 / (1.5 * truck.speed)));
@@ -366,7 +336,7 @@ public class Scene extends JPanel {
         }
     }
     
-    class EntityModifier extends Thread {
+    class ModifyAndPaint extends Thread {
         @Override
         public void run() {
             while (!gameOver) {
@@ -378,7 +348,9 @@ public class Scene extends JPanel {
 
                 offset += truck.speed;
     
-                for (Entity entity : entities) {
+                for (int entityIndex = 0; entityIndex < entities.size(); ++entityIndex) {
+                    Entity entity = entities.get(entityIndex);
+
                     entity.y += truck.speed;
 
                     if (entity.isCollidedWith(truck)) {
@@ -397,7 +369,14 @@ public class Scene extends JPanel {
                             entity.onCollided(truck);
                         }
                     }
+                    
+                    if (entity.y > getHeight()) {
+                        entities.remove(entityIndex);
+                        --entityIndex;
+                    }
                 }
+
+                repaint();
             }
         }
     }
