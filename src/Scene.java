@@ -314,7 +314,9 @@ public class Scene extends JPanel {
 
             while (gameStarted) {
                 if (!gamePaused) {
-                    int type = random(3);
+                    int extendObstacleIdRange = offset > 10000 ? 2 : 0;
+
+                    int type = random(1 + extendObstacleIdRange);
                     int slot = random(2);
                     boolean spanned = random();
                     boolean spawnOil = random();
