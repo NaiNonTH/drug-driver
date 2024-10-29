@@ -3,7 +3,7 @@ public class Hole extends Obstacle implements Runnable {
     private Truck truck;
 
     public Hole(int slot, int sceneWidth, int roadWidth) {
-        super("hole", 112, 35, false, slot, sceneWidth, roadWidth);
+        super("hole", 112, 84, false, slot, sceneWidth, roadWidth);
     }
 
     @Override
