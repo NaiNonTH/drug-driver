@@ -11,6 +11,7 @@ public class Cone extends Obstacle {
 
         if (collided) return 1;
 
+        setName("cone_broken");
         collided = true;
         truck.speed = (float) Math.max(1, truck.speed - 0.5);
 
