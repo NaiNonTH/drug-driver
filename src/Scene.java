@@ -74,11 +74,11 @@ public class Scene extends JPanel {
             URL explosionUrl = getClass().getResource("assets/textures/explosion.png");
             Image explosionImage = new ImageIcon(explosionUrl).getImage();
 
-            g.drawImage(explosionImage, truck.getX() + truck.getOffset(), getHeight() - 160, truck.getHeight(), truck.getHeight(), this);
+            g.drawImage(explosionImage, truck.x + truck.getOffset(), getHeight() - 160, truck.getHeight(), truck.getHeight(), this);
         }
     }
 
-    public void drawObstacles(Graphics g) {
+    public void drawEntities(Graphics g) {
         for (int entityIndex = 0; entityIndex < entities.size(); ++entityIndex) {
             Entity entity = entities.get(entityIndex);
             
@@ -105,7 +105,7 @@ public class Scene extends JPanel {
     public void paintComponent(Graphics g) {
         drawWater(g);
         drawRoad(g);
-        drawObstacles(g);
+        drawEntities(g);
         
         // Render UI
         
@@ -275,6 +275,8 @@ public class Scene extends JPanel {
                 pausePosY = y;
 
                 gamePaused = true;
+
+                repaint();
             }
         }
     }
@@ -295,13 +297,13 @@ public class Scene extends JPanel {
                     entities.add(new Barrier(slot, getWidth(), roadSize));
                     break;
                 case 1:
-                    entities.add(new Rice(slot, getWidth(), roadSize));
+                    entities.add(new Cone(slot, getWidth(), roadSize));
                     break;
                 case 2:
-                    entities.add(new Hole(slot, getWidth(), roadSize));
+                    entities.add(new Rice(slot, getWidth(), roadSize));
                     break;
                 case 3:
-                    entities.add(new Cone(slot, getWidth(), roadSize));
+                    entities.add(new Hole(slot, getWidth(), roadSize));
                     break;
             }
         }
@@ -314,16 +316,14 @@ public class Scene extends JPanel {
 
             while (gameStarted) {
                 if (!gamePaused) {
-                    int extendObstacleIdRange = offset > 10000 ? 2 : 0;
-
-                    int type = random(1 + extendObstacleIdRange);
+                    int type = random((int) Math.min(3, (int) offset / 7500));
                     int slot = random(2);
                     boolean spanned = random();
                     boolean spawnOil = random();
                     
                     spawnEntity(type, slot);
                     
-                    if (spanned && offset > 5000)
+                    if (spanned && offset > 7500)
                         spawnEntity(type, (slot + 1) % 2);
                     else if (spawnOil && truck.time < 48)
                         entities.add(new Oil((slot + 1) % 2, getWidth(), roadSize));
@@ -355,21 +355,13 @@ public class Scene extends JPanel {
 
                     entity.y += truck.speed;
 
-                    if (entity.isCollidedWith(truck)) {
-                        if (entity instanceof Obstacle) {
-                            Obstacle obstacle = (Obstacle) entity;
-                            
-                            if (
-                                !truck.isFloating() &&
-                                obstacle.onCollided(truck) == 0
-                            ) {
-                                gameOver = true;
-                                repaint();
-                            }
-                        }
-                        else {
-                            entity.onCollided(truck);
-                        }
+                    if (
+                        entity.isCollidedWith(truck) &&
+                        !truck.isFloating() &&
+                        entity.onCollided(truck) == 0
+                    ) {
+                        gameOver = true;
+                        repaint();
                     }
                     
                     if (entity.y > getHeight()) {

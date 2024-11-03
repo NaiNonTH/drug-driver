@@ -6,9 +6,7 @@ public class Oil extends Entity {
     }
 
     @Override
-    public int onCollided(Object obj) {
-        Truck truck = (Truck) obj;
-        
+    public int onCollided(Truck truck) {
         if (isCollected || truck.isFloating()) return 1;
 
         isCollected = true;

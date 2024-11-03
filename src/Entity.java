@@ -33,7 +33,7 @@ public class Entity implements Collidable {
     }
 
     @Override
-    public int onCollided(Object obj) {
+    public int onCollided(Truck truck) {
         return 0;
     }
 

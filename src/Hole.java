@@ -1,4 +1,4 @@
-public class Hole extends Obstacle implements Runnable {
+public class Hole extends Entity implements Runnable {
     private boolean stepped = false;
     private Truck truck;
 
@@ -7,10 +7,10 @@ public class Hole extends Obstacle implements Runnable {
     }
 
     @Override
-    public int onCollided(Object obj) {
-        truck = (Truck) obj;
-        
+    public int onCollided(Truck truck) {
         if (stepped || truck.speed < 1) return 1;
+
+        this.truck = truck;
 
         stepped = true;
         truck.time -= 15;

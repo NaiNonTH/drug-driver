@@ -25,23 +25,7 @@ public class Truck {
         height = floating ? baseSize * 2 : baseSize;
         offset = floating ? baseOffset * 2 : baseOffset;
     }
-
-    public int getX() {
-        return x;
-    }
-
-    public int getY() {
-        return y;
-    }
-
-    public static int getBasesize() {
-        return baseSize;
-    }
-
-    public static int getBaseOffset() {
-        return baseOffset;
-    }
-
+    
     public int getWidth() {
         return width;
     }

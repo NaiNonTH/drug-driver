@@ -1,4 +1,4 @@
-public class Cone extends Obstacle {
+public class Cone extends Entity {
     private boolean collided = false;
 
     public Cone(int slot, int sceneWidth, int roadWidth) {
@@ -6,9 +6,7 @@ public class Cone extends Obstacle {
     }
 
     @Override
-    public int onCollided(Object obj) {
-        Truck truck = (Truck) obj;
-
+    public int onCollided(Truck truck) {
         if (collided) return 1;
 
         setName("cone_broken");
