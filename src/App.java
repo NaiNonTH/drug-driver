@@ -7,7 +7,7 @@ public class App extends JFrame {
     public App() {
         setTitle("Drug Dealer");
         setSize(windowWidth, windowHeight);
-        setResizable(true);
+        setResizable(false);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
         setVisible(true);
