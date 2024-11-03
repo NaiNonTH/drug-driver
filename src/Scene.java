@@ -31,17 +31,17 @@ public class Scene extends JPanel {
         setFocusable(true);
 
         addMouseMotionListener(new MovingTruck());
-        addMouseListener(new StartAndPauseGame());
+        addMouseListener(new ClickListener());
     }
 
     int waterSize = 96;
     int roadSize = 128;
     
     URL waterUrl = getClass().getResource("assets/textures/water.png");
-
+    
     public void drawWater(Graphics g) {
         Image waterImage = new ImageIcon(waterUrl).getImage();
-
+        
         for (int y = (int)(offset / 16) % waterSize - waterSize; y < getHeight(); y += waterSize) {
             for (int x = 0; x < getWidth(); x += waterSize) {
                 g.drawImage(waterImage, x, y, waterSize, waterSize, this);
@@ -98,6 +98,11 @@ public class Scene extends JPanel {
             }
 
             g.drawImage(textureImage, entity.getX(), (int) entity.y, entity.getWidth(), entity.getHeight(), this);
+            
+            if (entity.y > getHeight()) {
+                entities.remove(entityIndex);
+                --entityIndex;
+            }
         }
     }
 
@@ -204,7 +209,7 @@ public class Scene extends JPanel {
         }
     }
 
-    class StartAndPauseGame implements MouseListener {
+    class ClickListener implements MouseListener {
         @Override
         public void mouseClicked(MouseEvent e) {}
 
@@ -342,35 +347,30 @@ public class Scene extends JPanel {
         @Override
         public void run() {
             while (!gameOver) {
-                try {
-                    sleep(0, 10);
-                } catch (InterruptedException e) {}
-
-                if (gamePaused) continue;
-
-                offset += truck.speed;
-    
-                for (int entityIndex = 0; entityIndex < entities.size(); ++entityIndex) {
-                    Entity entity = entities.get(entityIndex);
-
-                    entity.y += truck.speed;
-
-                    if (
-                        entity.isCollidedWith(truck) &&
-                        !truck.isFloating() &&
-                        entity.onCollided(truck) == 0
-                    ) {
-                        gameOver = true;
-                        repaint();
-                    }
-                    
-                    if (entity.y > getHeight()) {
-                        entities.remove(entityIndex);
-                        --entityIndex;
-                    }
-                }
-
                 repaint();
+
+                if (!gamePaused) {
+                    offset += truck.speed;
+        
+                    for (int entityIndex = 0; entityIndex < entities.size(); ++entityIndex) {
+                        Entity entity = entities.get(entityIndex);
+    
+                        entity.y += truck.speed;
+    
+                        if (
+                            entity.isCollidedWith(truck) &&
+                            !truck.isFloating() &&
+                            entity.onCollided(truck) == 0
+                        ) {
+                            gameOver = true;
+                            repaint();
+                        }
+                    }
+
+                    try {
+                        sleep(0, 10);
+                    } catch (InterruptedException e) {}
+                }
             }
         }
     }
