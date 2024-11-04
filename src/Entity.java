@@ -7,16 +7,16 @@ public class Entity implements Collidable {
 
     private String name;
     
-    public Entity(String name, int width, int height, boolean centered, int slot, int sceneWidth, int roadWidth) {
+    public Entity(String name, int width, int height, boolean centered, boolean useSlotRight, int sceneWidth, int roadWidth) {
         this.name = name;
         this.y = -height;
         this.width = width;
         this.height = height;
 
-        if (slot == RoadSlot.LEFT || slot == RoadSlot.BOTH)
-            x = sceneWidth / 2 + (centered ? -roadWidth + width / 2 : -width);
-        else
+        if (useSlotRight)
             x = sceneWidth / 2 + (centered ? width / 2 : 0);
+        else
+            x = sceneWidth / 2 + (centered ? -roadWidth + width / 2 : -width);
     }
     
     @Override

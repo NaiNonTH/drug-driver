@@ -1,7 +1,7 @@
 public class Oil extends Entity {
     public boolean isCollected = false;
 
-    public Oil(int slot, int sceneWidth, int roadWidth) {
+    public Oil(boolean slot, int sceneWidth, int roadWidth) {
         super("oil", 70, 112, true, slot, sceneWidth, roadWidth);
     }
 

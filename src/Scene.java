@@ -2,14 +2,14 @@ import java.awt.*;
 import java.awt.event.*;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.concurrent.ThreadLocalRandom;
 
 import javax.swing.*;
 
 public class Scene extends JPanel {
     double offset = 0;
 
-    boolean gameStarted = false;
-    boolean gameOver = false;
+    int gameStatus = 0;
 
     int mousePosX;
     int mousePosY;
@@ -38,7 +38,7 @@ public class Scene extends JPanel {
         
         for (int y = (int)(offset / 16) % waterSize - waterSize; y < getHeight(); y += waterSize) {
             waterUrl =
-                (offset / 16) - y >= (22500 / 16)
+                (offset / 16) - y >= (50000 / 16)
                   ? getClass().getResource("assets/textures/field-water.png")
                   : getClass().getResource("assets/textures/water.png");
                   
@@ -71,7 +71,7 @@ public class Scene extends JPanel {
 
         g.drawImage(truckImage, truck.x, truck.y, truck.getWidth(), truck.getHeight(), this);
 
-        if (gameOver) {
+        if (gameStatus == 2) {
             URL explosionUrl = getClass().getResource("assets/textures/explosion.png");
             Image explosionImage = new ImageIcon(explosionUrl).getImage();
 
@@ -118,7 +118,7 @@ public class Scene extends JPanel {
         g.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 24));
         FontMetrics metrics = g.getFontMetrics();
         
-        if (!gameStarted) {
+        if (gameStatus == 0) {
             g.setColor(new Color(255, 255, 0));
             g.fillRect(getWidth() / 2 - 120, getHeight() / 2 - 32, 240, 64);
 
@@ -129,7 +129,7 @@ public class Scene extends JPanel {
             g.drawString(startString, getWidth() / 2 - metrics.stringWidth(startString) / 2, getHeight() / 2 - 20 + metrics.getHeight());
             truck.x = getWidth() / 2 - 32;
         }
-        else if (gameOver) {
+        else if (gameStatus == 2) {
             String gameOverString = "GAME OVER";
             String scoreString = "Score: " + (int) offset;
 
@@ -159,7 +159,7 @@ public class Scene extends JPanel {
 
         // Draw Stamina bar
 
-        if (truck.stamina < 10 && !gameOver) {
+        if (truck.stamina < 10 && gameStatus != 2) {
             g.setColor(Color.GREEN);
             g.fillRect(mousePosX, mousePosY - 10, (int) Math.ceil(truck.stamina * 10), 4);
         }
@@ -169,7 +169,7 @@ public class Scene extends JPanel {
 
     class MovingTruck implements MouseMotionListener {
         public void moveTruck(MouseEvent e) {
-            if (!gameStarted || gameOver) return;
+            if (gameStatus != 1) return;
 
             truck.x = e.getX() + truck.getOffset();
 
@@ -178,13 +178,13 @@ public class Scene extends JPanel {
 
             if (
                 !truck.isFloating() &&
-                gameStarted &&
+                gameStatus == 1 &&
                 (
                     truck.x < getWidth() / 2 - roadSize + truck.getOffset() ||
                     truck.x > getWidth() / 2 + roadSize + truck.getOffset()
                 )
             ) {
-                gameOver = true;
+                gameStatus = 2;
                 repaint();
             }
         }
@@ -213,7 +213,7 @@ public class Scene extends JPanel {
         @Override
         public void mousePressed(MouseEvent e) {
             if (
-                gameStarted &&
+                gameStatus == 1 &&
                 e.getButton() == MouseEvent.BUTTON1
             ) {
                 truck.setFloatingTo(true);
@@ -227,24 +227,24 @@ public class Scene extends JPanel {
             int y = e.getY();
 
             if (
-                !gameOver &&
+                gameStatus != 2 &&
                 e.getButton() == MouseEvent.BUTTON1
             ) {
                 if (
-                    !gameStarted &&
+                    gameStatus == 0 &&
                     x >= getWidth() / 2 - 112 &&
                     x <= getWidth() / 2 + 128 &&
                     y >= getHeight() / 2 - 32 &&
                     y <= getHeight() / 2 + 32
                 ) {
-                    gameStarted = true;
+                    gameStatus = 1;
                     
                     spawnEntities.start();
                     modifyAndPaint.start();
                     countdown.start();
                     depleteStamina.start();
                 }
-                else if (gameStarted) {
+                else if (gameStatus == 1) {
                     truck.setFloatingTo(false);
                     truck.x = e.getX() + truck.getOffset();
                 }
@@ -257,24 +257,21 @@ public class Scene extends JPanel {
             return Math.round(Math.random()) == 1;
         }
         public int random(int range) {
-            return (int) Math.round(Math.random() * range);
+            return (int) Math.floor(Math.random() * range);
         }
-        public int random(int start, int end) {
-            return (int) Math.round(Math.random() * (end - start) + start);
-        }
-        public void spawnEntity(int type, int slot) {
+        public final void spawnEntity(int type, boolean useSlotRight) {
             switch (type) {
                 case 0:
-                    entities.add(new Barrier(slot, getWidth(), roadSize));
+                    entities.add(new Barrier(useSlotRight, getWidth(), roadSize));
                     break;
                 case 1:
-                    entities.add(new Cone(slot, getWidth(), roadSize));
+                    entities.add(new Cone(useSlotRight, getWidth(), roadSize));
                     break;
                 case 2:
-                    entities.add(new Rice(slot, getWidth(), roadSize));
+                    entities.add(new Rice(useSlotRight, getWidth(), roadSize));
                     break;
                 case 3:
-                    entities.add(new Hole(slot, getWidth(), roadSize));
+                    entities.add(new Hole(useSlotRight, getWidth(), roadSize));
                     break;
             }
         }
@@ -285,23 +282,33 @@ public class Scene extends JPanel {
                 sleep(3250);
             } catch (InterruptedException e) {}
 
-            while (!gameOver) {
-                int type = random((int) Math.min(3, (int) offset / 7500));
-                int slot = random(2);
-                boolean spanned = random();
+            while (gameStatus != 2) {
+                int type = random(offset >= 50000 ? 4 : 2);
+                int spanned = random(2);
+                boolean useSlotRight = random();
                 boolean spawnOil = random();
                 
-                spawnEntity(type, slot);
+                spawnEntity(type, useSlotRight);
                 
-                if (spanned && offset > 15000 && truck.stamina > 0.5)
-                    spawnEntity(type, (slot + 1) % 2);
+                if (spanned > 0 && offset > 15000) {
+                    switch (spanned) {
+                        case 1:
+                            spawnEntity(type, !useSlotRight);
+                            break;
+                        case 2:
+                            type = random(offset >= 50000 ? 4 : 2);
+                            spawnEntity(type, !useSlotRight);
+                            break;
+                    }
+                }
                 else if (spawnOil && truck.time < 48)
-                    entities.add(new Oil((slot + 1) % 2, getWidth(), roadSize));
+                    entities.add(new Oil(!useSlotRight, getWidth(), roadSize));
 
-                int time = random((int)(2000 / Math.pow(truck.speed, 2)), (int)(750 / Math.pow(truck.speed, 2)));
+                int randTimeBegin = (int)(750 / Math.pow(truck.speed, 2));
+                int randTimeEnd = (int)(1500 / Math.pow(truck.speed, 2));
                 
                 try {
-                    sleep(time);
+                    sleep(ThreadLocalRandom.current().nextInt(randTimeBegin, randTimeEnd));
                 } catch (InterruptedException e) {}
             }
         }
@@ -310,9 +317,9 @@ public class Scene extends JPanel {
     class ModifyAndPaint extends Thread {
         @Override
         public void run() {
-            while (!gameOver) {
+            while (gameStatus != 2) {
                 offset += truck.speed;
-        
+
                 for (int entityIndex = 0; entityIndex < entities.size(); ++entityIndex) {
                     Entity entity = entities.get(entityIndex);
     
@@ -323,8 +330,9 @@ public class Scene extends JPanel {
                         !truck.isFloating() &&
                         entity.onCollided(truck) == 0
                     ) {
-                        gameOver = true;
+                        gameStatus = 2;
                         repaint();
+                        break;
                     }
                 }
 
@@ -340,15 +348,16 @@ public class Scene extends JPanel {
     class Countdown extends Thread {
         @Override
         public void run() {
-            while (!gameOver && truck.time > 0) {
+            while (gameStatus != 2 && truck.time > 0) {
                 try {
                     sleep(1000);
                 } catch (InterruptedException e) {}
                 
-                truck.time -= 1;
+                if (gameStatus == 1)
+                    truck.time -= 1;
             }
 
-            gameOver = true;
+            gameStatus = 2;
             repaint();
         }
     }
@@ -356,7 +365,7 @@ public class Scene extends JPanel {
     class DepleteStamina extends Thread {
         @Override
         public void run() {
-            while (!gameOver) {
+            while (gameStatus != 2) {
                 try {
                     if (truck.isFloating()) {
                         truck.stamina -= 0.1;

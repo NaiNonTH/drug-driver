@@ -2,7 +2,7 @@ public class Hole extends Entity implements Runnable {
     private boolean stepped = false;
     private Truck truck;
 
-    public Hole(int slot, int sceneWidth, int roadWidth) {
+    public Hole(boolean slot, int sceneWidth, int roadWidth) {
         super("hole", 112, 84, false, slot, sceneWidth, roadWidth);
     }
 

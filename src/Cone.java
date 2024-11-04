@@ -1,7 +1,7 @@
 public class Cone extends Entity {
     private boolean collided = false;
 
-    public Cone(int slot, int sceneWidth, int roadWidth) {
+    public Cone(boolean slot, int sceneWidth, int roadWidth) {
         super("cone", 70, 77, true, slot, sceneWidth, roadWidth);
     }
 
