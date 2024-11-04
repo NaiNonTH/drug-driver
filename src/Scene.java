@@ -7,19 +7,19 @@ import java.util.concurrent.ThreadLocalRandom;
 import javax.swing.*;
 
 public class Scene extends JPanel {
-    double offset = 0;
+    private double offset = 0;
 
-    int gameStatus = 0;
+    private int gameStatus = 0;
 
-    int mousePosX;
-    int mousePosY;
+    private int mousePosX;
+    private int mousePosY;
     
-    Thread modifyAndPaint = new ModifyAndPaint();
-    Thread spawnEntities = new SpawnEntities();
-    Thread countdown = new Countdown();
-    Thread depleteStamina = new DepleteStamina();
+    private Thread modifyAndPaint = new ModifyAndPaint();
+    private Thread spawnEntities = new SpawnEntities();
+    private Thread countdown = new Countdown();
+    private Thread depleteStamina = new DepleteStamina();
     
-    Truck truck = new Truck();
+    private Truck truck = new Truck();
     
     ArrayList<Entity> entities = new ArrayList<Entity>();
 
@@ -46,11 +46,9 @@ public class Scene extends JPanel {
         else
             sceneArea = 0;
     }
-
-    int waterSize = 96;
-    int roadSize = 128;
     
     public void drawWater(Graphics g) {
+        int waterSize = 96;
         URL waterUrl;
         
         for (int y = (int)(offset / 16) % waterSize - waterSize; y < getHeight(); y += waterSize) {
@@ -74,11 +72,13 @@ public class Scene extends JPanel {
         }
     }
     
-    URL roadLeftUrl = getClass().getResource("assets/textures/road-left.png");
-    URL roadRightUrl = getClass().getResource("assets/textures/road-right.png");
-
+    private int roadSize = 128;
+    
     public void drawRoad(Graphics g) {
+        URL roadLeftUrl = getClass().getResource("assets/textures/road-left.png");
         Image roadLeftImage = new ImageIcon(roadLeftUrl).getImage();
+        
+        URL roadRightUrl = getClass().getResource("assets/textures/road-right.png");
         Image roadRightImage = new ImageIcon(roadRightUrl).getImage();
 
         for (int y = (int) offset % roadSize - roadSize; y < getHeight(); y += roadSize) {
@@ -86,7 +86,7 @@ public class Scene extends JPanel {
             int xRight = getWidth() / 2;
 
             if (offset - y >= area3Start) {
-                g.setColor(Color.WHITE);
+                g.setColor(Color.LIGHT_GRAY);
                 g.fillRect(xLeft, y, roadSize, roadSize);
                 g.fillRect(xRight, y, roadSize, roadSize);
             }
@@ -202,7 +202,7 @@ public class Scene extends JPanel {
     }
 
     class MovingTruck implements MouseMotionListener {
-        public void moveTruck(MouseEvent e) {
+        private void moveTruck(MouseEvent e) {
             if (gameStatus != 1) return;
 
             truck.x = e.getX() + truck.getOffset();
