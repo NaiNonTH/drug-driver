@@ -13,7 +13,7 @@ public class Hole extends Entity implements Runnable {
         this.truck = truck;
 
         stepped = true;
-        truck.time -= 15;
+        truck.time = Math.max(0, truck.time - 15);
         truck.speed = (float) 0.5;
         
         new Thread(this).start();
