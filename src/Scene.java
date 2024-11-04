@@ -30,6 +30,23 @@ public class Scene extends JPanel {
         addMouseListener(new ClickListener());
     }
 
+    private int sceneArea = 0;
+
+    private final int area1Start = 50000;
+    private final int area2Start = 150000;
+    private final int area3Start = 250000;
+
+    public void updateSceneArea() {
+        if (offset >= area1Start)
+            sceneArea = 1;
+        else if (offset >= area2Start)
+            sceneArea = 2;
+        else if (offset >= area3Start)
+            sceneArea = 3;
+        else
+            sceneArea = 0;
+    }
+
     int waterSize = 96;
     int roadSize = 128;
     
@@ -38,14 +55,21 @@ public class Scene extends JPanel {
         
         for (int y = (int)(offset / 16) % waterSize - waterSize; y < getHeight(); y += waterSize) {
             waterUrl =
-                (offset / 16) - y >= (50000 / 16)
+                offset / 16 - y >= area1Start / 16
                   ? getClass().getResource("assets/textures/field-water.png")
-                  : getClass().getResource("assets/textures/water.png");
+                  : offset / 16 - y >= area2Start / 16
+                    ? getClass().getResource("assets/textures/muddy-water.png")
+                    : getClass().getResource("assets/textures/water.png");
                   
             Image waterImage = new ImageIcon(waterUrl).getImage();
             
             for (int x = 0; x < getWidth(); x += waterSize) {
-                g.drawImage(waterImage, x, y, waterSize, waterSize, this);
+                if (offset / 16 - y >= area3Start / 16) {
+                    g.setColor(Color.BLACK);
+                    g.fillRect(x, y, waterSize, waterSize);
+                }
+                else
+                    g.drawImage(waterImage, x, y, waterSize, waterSize, this);
             }
         }
     }
@@ -58,8 +82,18 @@ public class Scene extends JPanel {
         Image roadRightImage = new ImageIcon(roadRightUrl).getImage();
 
         for (int y = (int) offset % roadSize - roadSize; y < getHeight(); y += roadSize) {
-            g.drawImage(roadLeftImage, getWidth() / 2 - roadSize, y, roadSize, roadSize, this);
-            g.drawImage(roadRightImage, getWidth() / 2, y, roadSize, roadSize, this);
+            int xLeft = getWidth() / 2 - roadSize;
+            int xRight = getWidth() / 2;
+
+            if (offset - y >= area3Start) {
+                g.setColor(Color.WHITE);
+                g.fillRect(xLeft, y, roadSize, roadSize);
+                g.fillRect(xRight, y, roadSize, roadSize);
+            }
+            else {
+                g.drawImage(roadLeftImage, xLeft, y, roadSize, roadSize, this);
+                g.drawImage(roadRightImage, xRight, y, roadSize, roadSize, this);
+            }
         }
     }
 
@@ -283,7 +317,20 @@ public class Scene extends JPanel {
             } catch (InterruptedException e) {}
 
             while (gameStatus != 2) {
-                int type = random(offset >= 50000 ? 4 : 2);
+                int type;
+
+                switch (sceneArea) {
+                    case 0:
+                        type = random(2);
+                        break;
+                    case 2:
+                        type = 3;
+                        break;
+                    default:
+                        type = random(4);
+                        break;
+                }
+
                 int spanned = random(2);
                 boolean useSlotRight = random();
                 boolean spawnOil = random();
@@ -304,9 +351,18 @@ public class Scene extends JPanel {
                 else if (spawnOil && truck.time < 48)
                     entities.add(new Oil(!useSlotRight, getWidth(), roadSize));
 
-                int randTimeBegin = (int)(750 / Math.pow(truck.speed, 2));
-                int randTimeEnd = (int)(1500 / Math.pow(truck.speed, 2));
-                
+                int randTimeBegin;
+                int randTimeEnd;
+
+                if (sceneArea >= 2) {
+                    randTimeBegin = (int)(700 / Math.pow(truck.speed, 2));
+                    randTimeEnd = (int)(750 / Math.pow(truck.speed, 2));
+                }
+                else {
+                    randTimeBegin = (int)(750 / Math.pow(truck.speed, 2));
+                    randTimeEnd = (int)(1500 / Math.pow(truck.speed, 2));
+                }
+
                 try {
                     sleep(ThreadLocalRandom.current().nextInt(randTimeBegin, randTimeEnd));
                 } catch (InterruptedException e) {}
@@ -319,6 +375,8 @@ public class Scene extends JPanel {
         public void run() {
             while (gameStatus != 2) {
                 offset += truck.speed;
+
+                updateSceneArea();
 
                 for (int entityIndex = 0; entityIndex < entities.size(); ++entityIndex) {
                     Entity entity = entities.get(entityIndex);
