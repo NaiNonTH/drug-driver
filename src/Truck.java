@@ -3,8 +3,8 @@ public class Truck {
     public int y;
     private boolean floating = false;
 
+    public int time = 60;
     public float speed = 1;
-    public float time = 60;
     public float stamina = 10;
     
     public final static int baseSize = 96;
