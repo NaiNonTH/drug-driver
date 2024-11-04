@@ -33,12 +33,17 @@ public class Scene extends JPanel {
     int waterSize = 96;
     int roadSize = 128;
     
-    URL waterUrl = getClass().getResource("assets/textures/water.png");
-    
     public void drawWater(Graphics g) {
-        Image waterImage = new ImageIcon(waterUrl).getImage();
+        URL waterUrl;
         
         for (int y = (int)(offset / 16) % waterSize - waterSize; y < getHeight(); y += waterSize) {
+            waterUrl =
+                (offset / 16) - y >= (22500 / 16)
+                  ? getClass().getResource("assets/textures/field-water.png")
+                  : getClass().getResource("assets/textures/water.png");
+                  
+            Image waterImage = new ImageIcon(waterUrl).getImage();
+            
             for (int x = 0; x < getWidth(); x += waterSize) {
                 g.drawImage(waterImage, x, y, waterSize, waterSize, this);
             }
@@ -142,7 +147,7 @@ public class Scene extends JPanel {
 
         // Draw time
 
-        String timeString = String.valueOf((int) Math.ceil(truck.time));
+        String timeString = String.valueOf(truck.time);
 
         g.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 48));
         metrics = g.getFontMetrics();
@@ -293,7 +298,7 @@ public class Scene extends JPanel {
                 else if (spawnOil && truck.time < 48)
                     entities.add(new Oil((slot + 1) % 2, getWidth(), roadSize));
 
-                int time = random((int)(2000 / truck.speed), (int)(750 / (1.5 * truck.speed)));
+                int time = random((int)(2000 / Math.pow(truck.speed, 2)), (int)(750 / Math.pow(truck.speed, 2)));
                 
                 try {
                     sleep(time);
