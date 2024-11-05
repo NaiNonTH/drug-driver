@@ -411,7 +411,7 @@ public class Scene extends JPanel {
                     sleep(1000);
                 } catch (InterruptedException e) {}
                 
-                if (gameStatus == 1)
+                if (gameStatus == 1 && truck.time > 0)
                     truck.time -= 1;
             }
 
