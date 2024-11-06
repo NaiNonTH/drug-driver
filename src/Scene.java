@@ -363,8 +363,6 @@ public class Scene extends JPanel {
                     randTimeEnd = (int)(1500 / Math.pow(truck.speed, 2));
                 }
 
-                System.out.println(randTimeBegin +" "+ randTimeEnd);
-
                 try {
                     sleep(ThreadLocalRandom.current().nextInt(Math.min(randTimeBegin, 1000), Math.min(randTimeEnd, 2000)));
                 } catch (InterruptedException e) {}
