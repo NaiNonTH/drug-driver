@@ -331,12 +331,12 @@ public class Scene extends JPanel {
                         break;
                 }
 
-                int spanned = random(2);
+                int spanned = random(3);
                 boolean useSlotRight = random();
                 boolean spawnOil = random();
                 
                 spawnEntity(type, useSlotRight);
-                
+
                 if (spanned > 0 && offset > 15000) {
                     switch (spanned) {
                         case 1:
