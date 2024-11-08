@@ -2,7 +2,7 @@ import javax.swing.JFrame;
 
 public class App extends JFrame {
     public App() {
-        setTitle("Drug Dealer");
+        setTitle("Drug Driver");
         setSize(960, 720);
         setResizable(false);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
