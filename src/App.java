@@ -7,9 +7,10 @@ public class App extends JFrame {
         setResizable(false);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
-        setVisible(true);
-
+        
         add(new Scene());
+
+        setVisible(true);
     }
 
     public static void main(String[] args) throws Exception {
